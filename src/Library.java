@@ -1,10 +1,8 @@
 import java.util.ArrayList;
-import java.util.Scanner;
 
 public class Library {
     private ArrayList<Book> livros;
     private ArrayList<User> usuarios;
-
 
     public Library(ArrayList<Book> livros, ArrayList<User> usuarios) {
         this.livros = livros;
@@ -27,118 +25,100 @@ public class Library {
         this.usuarios = usuarios;
     }
 
-    public String cadastrarLivros() {
-        Scanner scn = new Scanner(System.in);
-
-        System.out.println("Informe o nome do livro a ser cadastrado");
-        String scnTittle = scn.nextLine();
-
-        System.out.println("Informe o nome do autor do livro a ser cadastrado");
-        String scnAuth = scn.next();
-
-        System.out.println("Informe o ID do livro a ser cadastrado");
-        String scnId = scn.next();
-
-        if (scnTittle == null || scnTittle.isEmpty() || scnTittle.isBlank()) {
-            return "O titulo do livro é invalido!";
-        } else if (scnAuth == null || scnAuth.isEmpty() || scnAuth.isBlank()) {
-            return "O autor do livro é invalido!";
-        } else if (scnId == null || scnId.isEmpty() || scnId.isBlank()) {
-            return "O ID do livro é invalido";
-        } else {
-            Book livro = new Book(scnTittle, scnAuth, scnId, true);
-            livros.add(livro);
-            return "O livro foi cadastrado com sucesso!";
+    public String cadastrarLivro(String titulo, String autor, String isbn) {
+        if (titulo == null || titulo.isBlank()) {
+            return "O título do livro é inválido!";
         }
-    }
-
-    public String cadastrarUsuario() {
-        Scanner scn = new Scanner(System.in);
-
-        System.out.println("Informe o nome do usuario a ser cadastrado");
-        String scnNome = scn.nextLine();
-
-        System.out.println("Informe o ID do usuario a ser cadastrado");
-        int scnUserId = scn.nextInt();
-
-        if (scnNome.isBlank()) {
-            return "O nome de usuario é invalido!";
-        } else if (scnUserId <= 0) {
-            return "O id do usuario é invalido!";
-        } else {
-            User usuario = new User(scnNome, scnUserId, new ArrayList<>());
-            usuarios.add(usuario);
-            return "O usuario foi cadastrado com sucesso!";
+        if (autor == null || autor.isBlank()) {
+            return "O autor do livro é inválido!";
         }
-
-    }
-
-    public String realizarEmprestimo() {
-        Scanner scn = new Scanner(System.in);
-
-        System.out.println("Informe o ISBN do livro: ");
-        String scnISBN = scn.nextLine();
-
-        System.out.println("Informe o ID do usuário que vai pegar o livro: ");
-        int scnUserId = scn.nextInt();
-
-        if (scnISBN == null || scnISBN.isBlank()) {
+        if (isbn == null || isbn.isBlank()) {
             return "O ISBN do livro é inválido!";
         }
 
-        if (scnUserId <= 0) {
+        Book livro = new Book(titulo, autor, isbn, true);
+        livros.add(livro);
+        return "O livro foi cadastrado com sucesso!";
+    }
+
+    public String cadastrarUsuario(String nome, int id) {
+        if (nome == null || nome.isBlank()) {
+            return "O nome do usuário é inválido!";
+        }
+        if (id <= 0) {
             return "O ID do usuário é inválido!";
         }
 
-        Book livroEmprestar = null;
-        for (Book livro : livros) {
-            if (livro.getCodigoUnico().equals(scnISBN)) {
-                livroEmprestar = livro;
-                break;
-            }
-        }
+        User usuario = new User(nome, id, new ArrayList<>());
+        usuarios.add(usuario);
+        return "O usuário foi cadastrado com sucesso!";
+    }
 
-        if (livroEmprestar == null) {
+    public String realizarEmprestimo(String isbn, int userId) {
+        Book livro = buscarLivroPorISBN(isbn);
+        if (livro == null) {
             return "Livro não encontrado!";
         }
-
-        if (!livroEmprestar.isDisponivel()) {
+        if (!livro.isDisponivel()) {
             return "O livro não está disponível para empréstimo!";
         }
 
-        User usuarioEmprestimo = null;
-        for (User usuario : usuarios) {
-            if (usuario.getId() == scnUserId) {
-                usuarioEmprestimo = usuario;
-                break;
-            }
-        }
-        if (usuarioEmprestimo == null) {
+        User usuario = buscarUsuarioPorId(userId);
+        if (usuario == null) {
             return "Usuário não encontrado!";
         }
-        usuarioEmprestimo.getLivrosEmprestados().add(livroEmprestar.getCodigoUnico());
-        livroEmprestar.setDisponivel(false);
 
+        usuario.getLivrosEmprestados().add(livro.getCodigoUnico());
+        livro.setDisponivel(false);
         return "Empréstimo realizado com sucesso!";
     }
-    public String exibirLivrosDisponiveis() {
-        boolean temLivrosDisponiveis = false;
 
+    public String realizarDevolucao(String isbn, int userId) {
+        Book livro = buscarLivroPorISBN(isbn);
+        if (livro == null) {
+            return "Livro não encontrado!";
+        }
+
+        User usuario = buscarUsuarioPorId(userId);
+        if (usuario == null) {
+            return "Usuário não encontrado!";
+        }
+
+        if (!usuario.getLivrosEmprestados().contains(isbn)) {
+            return "O usuário não possui este livro emprestado!";
+        }
+
+        usuario.getLivrosEmprestados().remove(isbn);
+        livro.setDisponivel(true);
+        return "Devolução realizada com sucesso!";
+    }
+
+    public String exibirLivrosDisponiveis() {
+        StringBuilder livrosDisponiveis = new StringBuilder();
         for (Book livro : livros) {
             if (livro.isDisponivel()) {
-
-                System.out.println("Título: " + livro.getTituloDoLivro() +
-                        ", Autor: " + livro.getAutor() +
-                        ", ISBN: " + livro.getCodigoUnico());
-                temLivrosDisponiveis = true;
+                livrosDisponiveis.append(livro.exibirDetalhes()).append("\n");
             }
         }
 
-        if (!temLivrosDisponiveis) {
-            return "Não há livros disponíveis para empréstimo!";
-        }
-
-        return "Livros exibidos com sucesso!";
+        return livrosDisponiveis.length() > 0 ? livrosDisponiveis.toString() : "Não há livros disponíveis!";
     }
 
+    private Book buscarLivroPorISBN(String isbn) {
+        for (Book livro : livros) {
+            if (livro.getCodigoUnico().equals(isbn)) {
+                return livro;
+            }
+        }
+        return null;
+    }
+
+    private User buscarUsuarioPorId(int id) {
+        for (User usuario : usuarios) {
+            if (usuario.getId() == id) {
+                return usuario;
+            }
+        }
+        return null;
+    }
 }
